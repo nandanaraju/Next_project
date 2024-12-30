@@ -35,7 +35,7 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body className="min-h-screen flex flex-col bg-gradient-to-b from-teal-100 via-white to-teal-200">
         {/* Header */}
-        <header className="bg-teal-500 text-white py-4 shadow-lg">
+        <header className="bg-black text-white py-4 shadow-lg">
           <nav className="flex justify-between items-center max-w-7xl mx-auto px-6">
             {/* Logo */}
             <div className="text-2xl font-bold tracking-wide">
@@ -70,7 +70,7 @@ export default function RootLayout({ children }) {
               ) : (
                 <Link
                   href="/login"
-                  className="bg-white text-teal-600 px-4 py-2 rounded-md hover:bg-yellow-300 hover:text-teal-800 transition"
+                  className="bg-white text-black px-4 py-2 rounded-md hover:bg-yellow-300 hover:text-teal-800 transition"
                 >
                   Login
                 </Link>
@@ -83,7 +83,7 @@ export default function RootLayout({ children }) {
         <main>{children}</main>
 
         {/* Footer */}
-        <footer className="bg-teal-500 text-white py-6 text-center">
+        <footer className="bg-black text-white py-6 text-center">
           <p className="text-sm font-light">
             © 2024 Spa Bliss | Relaxation Redefined. All Rights Reserved.
           </p>

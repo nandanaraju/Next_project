@@ -1,6 +1,6 @@
 const express = require('express');
 const dbConnect = require('../../lib/dbConnect'); // Import database connection
-const Booking = require('../../models/book'); // Import Booking model
+const Booking = require('../../models/Book'); // Import Booking model
 const User = require('../../models/User'); // Import User model
 
 const router = express.Router();

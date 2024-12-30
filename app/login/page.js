@@ -106,7 +106,7 @@ const Login = () => {
           {/* Submit Button */}
           <button
             type="submit"
-            className="w-full py-3 bg-teal-500 text-white font-semibold rounded-lg shadow-md hover:bg-teal-600 hover:shadow-lg transition duration-300"
+            className="w-full py-3 bg-black text-white font-semibold rounded-lg shadow-md hover:bg-teal-600 hover:shadow-lg transition duration-300"
           >
             Log In
           </button>
@@ -115,7 +115,7 @@ const Login = () => {
           <div className="mt-4 text-center text-sm text-white">
             <p>
               Don't have an account?{" "}
-              <a href="/" className="text-teal-500 hover:underline">
+              <a href="/" className="text-white hover:underline">
                 Create one here
               </a>
             </p>

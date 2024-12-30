@@ -1,28 +1,75 @@
 'use client';
-import { useEffect, useState } from 'react';
+
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 
 export default function Home() {
   const [bookings, setBookings] = useState([]);
+  const [showModal, setShowModal] = useState(false);
+  const [newBooking, setNewBooking] = useState({ service: '', date: '' });
 
   useEffect(() => {
     const fetchBookings = async () => {
       try {
-        const response = await api.get('/bookings');
-        setBookings(response.data);
+        const response = await fetch('/api/bookings', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setBookings(data);
+        } else {
+          console.error('Failed to fetch bookings');
+        }
       } catch (err) {
-        console.error('Error fetching bookings');
+        console.error('Error fetching bookings:', err);
       }
     };
+
     fetchBookings();
   }, []);
 
   const handleDelete = async (id) => {
     try {
-      await api.delete(`/bookings/${id}`);
-      setBookings(bookings.filter((b) => b._id !== id));
+      const response = await fetch(`/api/bookings/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        setBookings(bookings.filter((b) => b._id !== id));
+      } else {
+        alert('Error deleting booking');
+      }
     } catch (err) {
+      console.error('Error deleting booking:', err);
       alert('Error deleting booking');
+    }
+  };
+
+  const handleAddBooking = async () => {
+    try {
+      const response = await fetch('/api/add-book', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newBooking),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setBookings([...bookings, data]);
+        setShowModal(false);
+        setNewBooking({ service: '', date: '' });
+      } else {
+        alert('Error adding booking');
+      }
+    } catch (err) {
+      console.error('Error adding booking:', err);
+      alert('Error adding booking');
     }
   };
 
@@ -32,20 +79,18 @@ export default function Home() {
         {/* Header Section */}
         <div className="bg-gradient-to-r from-teal-500 to-green-400 text-white py-6 px-8">
           <h1 className="text-3xl font-bold">Your Bookings</h1>
-          <p className="text-sm font-light">
-            Manage your spa appointments with ease.
-          </p>
+          <p className="text-sm font-light">Manage your spa appointments with ease.</p>
         </div>
 
         {/* Main Content */}
         <div className="p-8">
           {/* Add Booking Button */}
-          <Link
-            href="/bookings/add"
+          <button
+            onClick={() => setShowModal(true)}
             className="inline-block bg-teal-500 text-white font-bold py-2 px-6 rounded-md mb-6 shadow hover:bg-teal-600 transition duration-200"
           >
             Add Booking
-          </Link>
+          </button>
 
           {/* Booking List */}
           {bookings.length > 0 ? (
@@ -56,9 +101,7 @@ export default function Home() {
                   className="flex justify-between items-center bg-gradient-to-r from-teal-100 to-teal-50 p-4 rounded-lg shadow-sm hover:shadow-md transition"
                 >
                   <div>
-                    <p className="text-gray-800 font-medium text-lg">
-                      {booking.service}
-                    </p>
+                    <p className="text-gray-800 font-medium text-lg">{booking.service}</p>
                     <p className="text-gray-500 text-sm">{booking.date}</p>
                   </div>
                   <button
@@ -77,6 +120,48 @@ export default function Home() {
           )}
         </div>
       </div>
+
+      {/* Modal for Adding Booking */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-8 rounded-lg shadow-lg max-w-sm w-full">
+            <h2 className="text-2xl font-bold mb-4">Add New Booking</h2>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Service</label>
+              <input
+                type="text"
+                value={newBooking.service}
+                onChange={(e) => setNewBooking({ ...newBooking, service: e.target.value })}
+                className="w-full border-gray-300 rounded-md shadow-sm p-2"
+                placeholder="Enter service name"
+              />
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Date</label>
+              <input
+                type="date"
+                value={newBooking.date}
+                onChange={(e) => setNewBooking({ ...newBooking, date: e.target.value })}
+                className="w-full border-gray-300 rounded-md shadow-sm p-2"
+              />
+            </div>
+            <div className="flex justify-end space-x-4">
+              <button
+                onClick={() => setShowModal(false)}
+                className="px-4 py-2 bg-gray-300 rounded-md hover:bg-gray-400 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddBooking}
+                className="px-4 py-2 bg-teal-500 text-white rounded-md hover:bg-teal-600 transition"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

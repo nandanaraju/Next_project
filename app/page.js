@@ -124,7 +124,7 @@ const Signup = () => {
             {/* Submit Button */}
             <button
               type="submit"
-              className="w-full py-3 bg-teal-500 text-white font-semibold rounded-lg shadow-md hover:bg-teal-600 hover:shadow-lg transition duration-300"
+              className="w-full py-3 bg-black text-white font-semibold rounded-lg shadow-md  transition duration-300"
             >
               Sign Up
             </button>
@@ -133,7 +133,7 @@ const Signup = () => {
             <div className="mt-4 text-center text-sm text-white">
               <p>
                 Already have an account?{" "}
-                <a href="/login" className="text-teal-500 hover:underline">
+                <a href="/login" className="text-black hover:underline">
                   Log in here
                 </a>
               </p>
@@ -148,7 +148,7 @@ const Signup = () => {
             Join our wellness community and enjoy exclusive spa treatments and
             services that rejuvenate your mind, body, and soul.
           </p>
-          <button className="px-6 py-3 bg-white text-teal-500 font-semibold rounded-lg shadow-md hover:brightness-110 transition duration-300">
+          <button className="px-6 py-3 bg-white text-black font-semibold rounded-lg shadow-md hover:brightness-110 transition duration-300">
             Learn More
           </button>
         </div>
