@@ -1,80 +1,131 @@
+// Import dependencies
 const express = require('express');
-const dbConnect = require('../../lib/dbConnect'); // Import database connection
-const Booking = require('../../models/Book'); // Import Booking model
-const User = require('../../models/User'); // Import User model
+const bodyParser = require('body-parser');
+const mongoose = require('mongoose');
 
-const router = express.Router();
+const app = express();
+const PORT = 4000;
 
-// Middleware to verify if the user exists
-const verifyUser = async (req, res, next) => {
-  const userId = req.body?.userId || req.query?.userId || req.headers['user-id']; // Extract userId from request
+// Middleware
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
 
-  if (!userId) {
-    return res.status(400).json({ error: 'User ID is required' });
-  }
-
-  try {
-    await dbConnect(); // Ensure the database is connected
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    req.user = user; // Attach user information to the request
-    next();
-  } catch (error) {
-    console.error('Error verifying user:', error.message);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-};
-
-// Async error handling wrapper
-const asyncHandler = (fn) => (req, res, next) => {
-  Promise.resolve(fn(req, res, next)).catch(next);
-};
-
-// Get Bookings
-router.get('/', verifyUser, asyncHandler(async (req, res) => {
-  await dbConnect(); // Ensure the database is connected
-  const bookings = await Booking.find({ userId: req.user._id });
-  res.json(bookings);
-}));
-
-// Add Booking
-router.post('/add-book', verifyUser, asyncHandler(async (req, res) => {
-  const { service, date } = req.body;
-
-  if (!service || !date) {
-    return res.status(400).json({ error: 'Service and date are required' });
-  }
-
-  await dbConnect(); // Ensure the database is connected
-  const booking = new Booking({ userId: req.user._id, service, date });
-  await booking.save();
-  res.status(201).json(booking);
-}));
-
-// Delete Booking
-router.delete('/:id', verifyUser, asyncHandler(async (req, res) => {
-  await dbConnect(); // Ensure the database is connected
-  const booking = await Booking.findById(req.params.id);
-
-  if (!booking) {
-    return res.status(404).json({ error: 'Booking not found' });
-  }
-
-  // Ensure the user deleting the booking owns it
-  if (booking.userId.toString() !== req.user._id.toString()) {
-    return res.status(403).json({ error: 'Unauthorized action' });
-  }
-
-  await booking.deleteOne();
-  res.json({ message: 'Booking deleted successfully' });
-}));
-
-// Error handler for unhandled routes
-router.use((req, res) => {
-  res.status(404).json({ error: 'Route not found' });
+// Connect to MongoDB
+mongoose.connect('mongodb://localhost:27017/appointments', {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
 });
 
-module.exports = router;
+const db = mongoose.connection;
+db.on('error', console.error.bind(console, 'connection error:'));
+db.once('open', () => {
+  console.log('Connected to MongoDB');
+});
+
+// Define the Booking Schema
+const BookingSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  phone: { type: String, required: true, unique: true },
+  service: { type: String, required: true },
+  time: { type: String, required: true },
+  date: { type: Date, required: true },
+  notes: { type: String },
+  userId: { type: String, required: true }, // New field
+});
+
+
+const Booking = mongoose.model('Booking', BookingSchema);
+
+// Routes
+// GET /appointments: Fetch all appointments
+app.get('/appointments', async (req, res) => {
+  try {
+    const appointments = await Booking.find();
+    res.json(appointments);
+  } catch (error) {
+    console.error('Error fetching appointments:', error);
+    res.status(500).send('Internal server error');
+  }
+});
+
+// POST /submit-booking: Create or modify an appointment
+app.post('/submit-booking', async (req, res) => {
+  const { name, phone, service, time, date, notes } = req.body;
+
+  try {
+    const existingBooking = await Booking.findOne({ phone });
+
+    if (existingBooking) {
+      // Update existing appointment
+      existingBooking.service = service;
+      existingBooking.time = time;
+      existingBooking.date = date;
+      existingBooking.notes = notes;
+      await existingBooking.save();
+
+      res.send('Appointment updated successfully!');
+    } else {
+      // Add new appointment
+      const newBooking = new Booking({ name, phone, service, time, date, notes });
+      await newBooking.save();
+
+      res.send('Appointment booked successfully!');
+    }
+  } catch (error) {
+    console.error('Error handling booking:', error);
+    res.status(500).send('Internal server error');
+  }
+});
+
+// POST /modify-appointment: Modify an existing appointment
+app.post('/modify-appointment', async (req, res) => {
+  const { phone, service, time, date, notes } = req.body;
+
+  try {
+    const appointment = await Booking.findOne({ phone });
+
+    if (appointment) {
+      appointment.service = service;
+      appointment.time = time;
+      appointment.date = date;
+      appointment.notes = notes;
+      await appointment.save();
+
+      res.send('Appointment modified successfully!');
+    } else {
+      res.status(404).send('Appointment not found!');
+    }
+  } catch (error) {
+    console.error('Error modifying appointment:', error);
+    res.status(500).send('Internal server error');
+  }
+});
+
+// POST /cancel-appointment: Cancel an appointment
+app.post('/cancel-appointment', async (req, res) => {
+  const { phone } = req.body;
+
+  try {
+    const result = await Booking.deleteOne({ phone });
+
+    if (result.deletedCount > 0) {
+      res.send('Appointment cancelled successfully!');
+    } else {
+      res.status(404).send('Appointment not found!');
+    }
+  } catch (error) {
+    console.error('Error cancelling appointment:', error);
+    res.status(500).send('Internal server error');
+  }
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).send('Something went wrong!');
+});
+
+// Start the server
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
+});

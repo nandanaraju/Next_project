@@ -1,167 +1,191 @@
 'use client';
+import { useState, useEffect } from 'react';
 
-import React, { useEffect, useState } from 'react';
-import Link from 'next/link';
+export default function Appointments() {
+  const [appointments, setAppointments] = useState([]);
+  const [form, setForm] = useState({
+    name: '',
+    phone: '',
+    service: '',
+    time: '',
+    date: '',
+    notes: '',
+  });
+  const [isUpdating, setIsUpdating] = useState(false);
 
-export default function Home() {
-  const [bookings, setBookings] = useState([]);
-  const [showModal, setShowModal] = useState(false);
-  const [newBooking, setNewBooking] = useState({ service: '', date: '' });
-
-  useEffect(() => {
-    const fetchBookings = async () => {
-      try {
-        const response = await fetch('/api/bookings', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          setBookings(data);
-        } else {
-          console.error('Failed to fetch bookings');
-        }
-      } catch (err) {
-        console.error('Error fetching bookings:', err);
-      }
-    };
-
-    fetchBookings();
-  }, []);
-
-  const handleDelete = async (id) => {
+  // Fetch appointments
+  const fetchAppointments = async () => {
     try {
-      const response = await fetch(`/api/bookings/${id}`, {
-        method: 'DELETE',
-      });
-
-      if (response.ok) {
-        setBookings(bookings.filter((b) => b._id !== id));
-      } else {
-        alert('Error deleting booking');
-      }
-    } catch (err) {
-      console.error('Error deleting booking:', err);
-      alert('Error deleting booking');
+      const res = await fetch('/appointments');
+      const data = await res.json();
+      setAppointments(data);
+    } catch (error) {
+      console.error('Error fetching appointments:', error);
     }
   };
 
-  const handleAddBooking = async () => {
-    try {
-      const response = await fetch('/api/add-book', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(newBooking),
-      });
+  useEffect(() => {
+    fetchAppointments();
+  }, []);
 
-      if (response.ok) {
-        const data = await response.json();
-        setBookings([...bookings, data]);
-        setShowModal(false);
-        setNewBooking({ service: '', date: '' });
-      } else {
-        alert('Error adding booking');
-      }
-    } catch (err) {
-      console.error('Error adding booking:', err);
-      alert('Error adding booking');
+  // Handle form change
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  // Handle form submit
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const url = isUpdating ? '/modify-appointment' : '/submit-booking';
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      const message = await res.text();
+      alert(message);
+      fetchAppointments();
+      setForm({
+        name: '',
+        phone: '',
+        service: '',
+        time: '',
+        date: '',
+        notes: '',
+      });
+      setIsUpdating(false);
+    } catch (error) {
+      console.error('Error submitting form:', error);
+    }
+  };
+
+  // Handle appointment update
+  const handleUpdate = (appointment) => {
+    setForm(appointment);
+    setIsUpdating(true);
+  };
+
+  // Handle appointment cancel
+  const handleCancel = async (phone) => {
+    try {
+      const res = await fetch('/cancel-appointment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone }),
+      });
+      const message = await res.text();
+      alert(message);
+      fetchAppointments();
+    } catch (error) {
+      console.error('Error cancelling appointment:', error);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-teal-100 via-white to-teal-200 py-10 px-6">
-      <div className="max-w-4xl mx-auto bg-white shadow-xl rounded-xl overflow-hidden">
-        {/* Header Section */}
-        <div className="bg-gradient-to-r from-teal-500 to-green-400 text-white py-6 px-8">
-          <h1 className="text-3xl font-bold">Your Bookings</h1>
-          <p className="text-sm font-light">Manage your spa appointments with ease.</p>
-        </div>
+    <div
+      className="relative min-h-screen flex items-center justify-center bg-cover bg-center"
+      style={{
+        backgroundImage:
+          'url("https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?fit=crop&w=1920&q=80")',
+      }}
+    >
+      {/* Background Overlay */}
+      <div className="absolute inset-0 bg-black opacity-40"></div>
 
-        {/* Main Content */}
-        <div className="p-8">
-          {/* Add Booking Button */}
+      <div className="relative z-10 flex flex-col w-full max-w-3xl bg-white shadow-xl rounded-lg p-8">
+        <h1 className="text-3xl font-extrabold text-gray-800 mb-6 text-center">
+          Manage Appointments
+        </h1>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <input
+            type="text"
+            name="name"
+            placeholder="Name"
+            value={form.name}
+            onChange={handleChange}
+            className="w-full px-4 py-3 bg-gray-100 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+            required
+          />
+          <input
+            type="text"
+            name="phone"
+            placeholder="Phone"
+            value={form.phone}
+            onChange={handleChange}
+            className="w-full px-4 py-3 bg-gray-100 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+            required
+          />
+          <input
+            type="text"
+            name="service"
+            placeholder="Service"
+            value={form.service}
+            onChange={handleChange}
+            className="w-full px-4 py-3 bg-gray-100 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+            required
+          />
+          <input
+            type="time"
+            name="time"
+            placeholder="Time"
+            value={form.time}
+            onChange={handleChange}
+            className="w-full px-4 py-3 bg-gray-100 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+            required
+          />
+          <input
+            type="date"
+            name="date"
+            placeholder="Date"
+            value={form.date}
+            onChange={handleChange}
+            className="w-full px-4 py-3 bg-gray-100 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+            required
+          />
+          <textarea
+            name="notes"
+            placeholder="Notes"
+            value={form.notes}
+            onChange={handleChange}
+            className="w-full px-4 py-3 bg-gray-100 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+          ></textarea>
           <button
-            onClick={() => setShowModal(true)}
-            className="inline-block bg-teal-500 text-white font-bold py-2 px-6 rounded-md mb-6 shadow hover:bg-teal-600 transition duration-200"
+            type="submit"
+            className="w-full py-3 bg-black text-white font-semibold rounded-lg shadow-md hover:brightness-110 transition duration-300"
           >
-            Add Booking
+            {isUpdating ? 'Update' : 'Add'} Appointment
           </button>
+        </form>
 
-          {/* Booking List */}
-          {bookings.length > 0 ? (
-            <ul className="space-y-4">
-              {bookings.map((booking) => (
-                <li
-                  key={booking._id}
-                  className="flex justify-between items-center bg-gradient-to-r from-teal-100 to-teal-50 p-4 rounded-lg shadow-sm hover:shadow-md transition"
+        <h2 className="text-2xl font-bold text-gray-800 mt-8 mb-4">Appointments</h2>
+        <ul className="space-y-4">
+          {appointments.map((appt) => (
+            <li key={appt._id} className="p-4 bg-gray-100 rounded-lg shadow-sm">
+              <strong className="block text-lg font-bold text-gray-700">
+                {appt.name}
+              </strong>
+              <p className="text-sm text-gray-600">
+                {appt.service} on {new Date(appt.date).toLocaleDateString()} at {appt.time}
+              </p>
+              <div className="mt-4 space-x-4">
+                <button
+                  onClick={() => handleUpdate(appt)}
+                  className="px-4 py-2 bg-teal-500 text-white font-medium rounded-lg shadow-md hover:bg-teal-600 transition"
                 >
-                  <div>
-                    <p className="text-gray-800 font-medium text-lg">{booking.service}</p>
-                    <p className="text-gray-500 text-sm">{booking.date}</p>
-                  </div>
-                  <button
-                    onClick={() => handleDelete(booking._id)}
-                    className="bg-red-500 text-white py-2 px-4 rounded-md hover:bg-red-600 transition duration-200"
-                  >
-                    Cancel
-                  </button>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-gray-600 text-center py-10 text-lg">
-              No bookings available. Start by adding a new booking!
-            </p>
-          )}
-        </div>
+                  Update
+                </button>
+                <button
+                  onClick={() => handleCancel(appt.phone)}
+                  className="px-4 py-2 bg-red-500 text-white font-medium rounded-lg shadow-md hover:bg-red-600 transition"
+                >
+                  Cancel
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
       </div>
-
-      {/* Modal for Adding Booking */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-8 rounded-lg shadow-lg max-w-sm w-full">
-            <h2 className="text-2xl font-bold mb-4">Add New Booking</h2>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Service</label>
-              <input
-                type="text"
-                value={newBooking.service}
-                onChange={(e) => setNewBooking({ ...newBooking, service: e.target.value })}
-                className="w-full border-gray-300 rounded-md shadow-sm p-2"
-                placeholder="Enter service name"
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Date</label>
-              <input
-                type="date"
-                value={newBooking.date}
-                onChange={(e) => setNewBooking({ ...newBooking, date: e.target.value })}
-                className="w-full border-gray-300 rounded-md shadow-sm p-2"
-              />
-            </div>
-            <div className="flex justify-end space-x-4">
-              <button
-                onClick={() => setShowModal(false)}
-                className="px-4 py-2 bg-gray-300 rounded-md hover:bg-gray-400 transition"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleAddBooking}
-                className="px-4 py-2 bg-teal-500 text-white rounded-md hover:bg-teal-600 transition"
-              >
-                Save
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
